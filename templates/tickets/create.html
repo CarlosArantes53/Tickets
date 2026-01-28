@@ -1,25 +1,22 @@
 {% extends 'base.html' %}
 
-{% block title %}Novo Ticket - TechSupport{% endblock %}
+{% block title %}Novo Ticket - TechSupport Manager{% endblock %}
 
 {% block content %}
-<div class="row mb-4">
-    <div class="col">
-        <nav aria-label="breadcrumb">
-            <ol class="breadcrumb">
-                <li class="breadcrumb-item"><a href="{% url 'tickets:list' %}">Tickets</a></li>
-                <li class="breadcrumb-item active">Novo</li>
-            </ol>
-        </nav>
-    </div>
-</div>
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'tickets:list' %}">Tickets</a></li>
+        <li class="breadcrumb-item active">Novo Ticket</li>
+    </ol>
+</nav>
 
 <div class="row justify-content-center">
-    <div class="col-md-8">
+    <div class="col-lg-8">
         <div class="card">
             <div class="card-header">
                 <h5 class="mb-0">
-                    <i class="bi bi-plus-circle"></i> Criar Novo Ticket
+                    <i class="bi bi-plus-circle me-2"></i>
+                    Criar Novo Ticket
                 </h5>
             </div>
             <div class="card-body">
@@ -38,105 +35,87 @@
                         <label for="id_titulo" class="form-label">
                             Título <span class="text-danger">*</span>
                         </label>
-                        <input type="text" 
-                               name="titulo" 
-                               id="id_titulo"
-                               class="form-control {% if form.titulo.errors %}is-invalid{% endif %}" 
-                               value="{{ form.titulo.value|default:'' }}"
-                               placeholder="Descreva o problema em poucas palavras..."
-                               required>
+                        {{ form.titulo }}
                         {% if form.titulo.errors %}
-                        <div class="invalid-feedback">
-                            {{ form.titulo.errors.0 }}
+                        <div class="invalid-feedback d-block">
+                            {% for error in form.titulo.errors %}{{ error }}{% endfor %}
                         </div>
                         {% endif %}
-                        <div class="form-text">Mínimo 3 caracteres</div>
+                        <small class="text-muted">Mínimo 3 caracteres</small>
                     </div>
                     
                     <div class="mb-3">
                         <label for="id_descricao" class="form-label">
                             Descrição <span class="text-danger">*</span>
                         </label>
-                        <textarea name="descricao" 
-                                  id="id_descricao"
-                                  class="form-control {% if form.descricao.errors %}is-invalid{% endif %}"
-                                  rows="5"
-                                  placeholder="Descreva detalhadamente o problema, incluindo passos para reproduzir..."
-                                  required>{{ form.descricao.value|default:'' }}</textarea>
+                        {{ form.descricao }}
                         {% if form.descricao.errors %}
-                        <div class="invalid-feedback">
-                            {{ form.descricao.errors.0 }}
+                        <div class="invalid-feedback d-block">
+                            {% for error in form.descricao.errors %}{{ error }}{% endfor %}
                         </div>
                         {% endif %}
-                        <div class="form-text">Mínimo 10 caracteres</div>
+                        <small class="text-muted">Descreva o problema com pelo menos 10 caracteres</small>
                     </div>
                     
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label for="id_prioridade" class="form-label">Prioridade</label>
-                            <select name="prioridade" id="id_prioridade" class="form-select">
-                                <option value="BAIXA" {% if form.prioridade.value == 'BAIXA' %}selected{% endif %}>
-                                    🟢 Baixa (7 dias)
-                                </option>
-                                <option value="MEDIA" {% if form.prioridade.value == 'MEDIA' or not form.prioridade.value %}selected{% endif %}>
-                                    🟡 Média (3 dias)
-                                </option>
-                                <option value="ALTA" {% if form.prioridade.value == 'ALTA' %}selected{% endif %}>
-                                    🟠 Alta (24 horas)
-                                </option>
-                                <option value="CRITICA" {% if form.prioridade.value == 'CRITICA' %}selected{% endif %}>
-                                    🔴 Crítica (4 horas)
-                                </option>
-                            </select>
+                            {{ form.prioridade }}
+                            <small class="text-muted">
+                                Define o prazo de SLA do ticket
+                            </small>
                         </div>
                         
                         <div class="col-md-6 mb-3">
                             <label for="id_categoria" class="form-label">Categoria</label>
-                            <input type="text" 
-                                   name="categoria" 
-                                   id="id_categoria"
-                                   class="form-control"
-                                   value="{{ form.categoria.value|default:'Geral' }}"
-                                   placeholder="Ex: Infraestrutura, Autenticação...">
+                            {{ form.categoria }}
                         </div>
                     </div>
                     
                     <div class="mb-4">
                         <label for="id_tags" class="form-label">Tags</label>
-                        <input type="text" 
-                               name="tags" 
-                               id="id_tags"
-                               class="form-control"
-                               value="{{ form.tags.value|default:'' }}"
-                               placeholder="bug, urgente, cliente-vip">
-                        <div class="form-text">Separe as tags por vírgula</div>
+                        {{ form.tags }}
+                        <small class="text-muted">{{ form.tags.help_text }}</small>
                     </div>
+                    
+                    <hr>
                     
                     <div class="d-flex justify-content-between">
                         <a href="{% url 'tickets:list' %}" class="btn btn-outline-secondary">
-                            <i class="bi bi-arrow-left"></i> Cancelar
+                            <i class="bi bi-x-circle me-1"></i> Cancelar
                         </a>
                         <button type="submit" class="btn btn-primary">
-                            <i class="bi bi-check-circle"></i> Criar Ticket
+                            <i class="bi bi-check-circle me-1"></i> Criar Ticket
                         </button>
                     </div>
                 </form>
             </div>
         </div>
         
-        <!-- Dicas -->
+        <!-- Info sobre SLA -->
         <div class="card mt-4">
             <div class="card-header">
-                <h6 class="mb-0"><i class="bi bi-lightbulb"></i> Dicas para um bom ticket</h6>
+                <i class="bi bi-clock me-1"></i> Prazos de SLA por Prioridade
             </div>
             <div class="card-body">
-                <ul class="mb-0">
-                    <li>Seja específico no título</li>
-                    <li>Inclua passos para reproduzir o problema</li>
-                    <li>Mencione qual resultado você esperava</li>
-                    <li>Informe ambiente/versão se aplicável</li>
-                    <li>Adicione screenshots se possível</li>
-                </ul>
+                <div class="row text-center">
+                    <div class="col-3">
+                        <span class="badge badge-critica bg-danger d-block mb-1">Crítica</span>
+                        <small>4 horas</small>
+                    </div>
+                    <div class="col-3">
+                        <span class="badge badge-alta bg-warning text-dark d-block mb-1">Alta</span>
+                        <small>24 horas</small>
+                    </div>
+                    <div class="col-3">
+                        <span class="badge badge-media bg-info d-block mb-1">Média</span>
+                        <small>72 horas</small>
+                    </div>
+                    <div class="col-3">
+                        <span class="badge badge-baixa bg-success d-block mb-1">Baixa</span>
+                        <small>7 dias</small>
+                    </div>
+                </div>
             </div>
         </div>
     </div>

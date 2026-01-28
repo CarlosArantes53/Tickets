@@ -1,18 +1,14 @@
 {% extends 'base.html' %}
 
-{% block title %}Ticket não encontrado - TechSupport{% endblock %}
+{% block title %}Ticket Não Encontrado - TechSupport Manager{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-md-6 text-center py-5">
-        <i class="bi bi-search" style="font-size: 5rem; color: #6c757d;"></i>
-        <h2 class="mt-4">Ticket não encontrado</h2>
-        <p class="text-muted">
-            O ticket que você está procurando não existe ou foi removido.
-        </p>
-        <a href="{% url 'tickets:list' %}" class="btn btn-primary mt-3">
-            <i class="bi bi-arrow-left"></i> Voltar para lista
-        </a>
-    </div>
+<div class="text-center py-5">
+    <i class="bi bi-search" style="font-size: 5rem; color: #6c757d; opacity: 0.5;"></i>
+    <h2 class="mt-4">Ticket Não Encontrado</h2>
+    <p class="text-muted">O ticket que você está procurando não existe ou foi removido.</p>
+    <a href="{% url 'tickets:list' %}" class="btn btn-primary mt-3">
+        <i class="bi bi-arrow-left me-1"></i> Voltar para Lista
+    </a>
 </div>
 {% endblock %}

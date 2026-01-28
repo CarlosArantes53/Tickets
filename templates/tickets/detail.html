@@ -1,192 +1,192 @@
 {% extends 'base.html' %}
 
-{% block title %}{{ ticket.titulo }} - TechSupport{% endblock %}
+{% block title %}Ticket #{{ ticket.id|slice:":8" }} - TechSupport Manager{% endblock %}
 
 {% block content %}
-<div class="row mb-4">
-    <div class="col">
-        <nav aria-label="breadcrumb">
-            <ol class="breadcrumb">
-                <li class="breadcrumb-item"><a href="{% url 'tickets:list' %}">Tickets</a></li>
-                <li class="breadcrumb-item active">{{ ticket.id|truncatechars:12 }}</li>
-            </ol>
-        </nav>
-    </div>
-</div>
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'tickets:list' %}">Tickets</a></li>
+        <li class="breadcrumb-item active">{{ ticket.id|slice:":8" }}...</li>
+    </ol>
+</nav>
 
 <div class="row">
-    <!-- Detalhes do Ticket -->
-    <div class="col-md-8">
+    <!-- Coluna Principal -->
+    <div class="col-lg-8">
         <div class="card mb-4">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h5 class="mb-0">
-                    <i class="bi bi-ticket-detailed"></i>
+                    <i class="bi bi-ticket-detailed me-2"></i>
                     {{ ticket.titulo }}
                 </h5>
-                <span class="badge badge-status-{{ ticket.status|lower|slugify }}">
-                    {{ ticket.status }}
-                </span>
+                <div>
+                    {% include 'includes/status_badge.html' with status=ticket.status %}
+                    {% include 'includes/prioridade_badge.html' with prioridade=ticket.prioridade %}
+                </div>
             </div>
             <div class="card-body">
                 <div class="mb-4">
-                    <h6 class="text-muted">Descrição</h6>
-                    <p class="mb-0">{{ ticket.descricao|linebreaks }}</p>
+                    <h6 class="text-muted mb-2">Descrição</h6>
+                    <p class="mb-0" style="white-space: pre-wrap;">{{ ticket.descricao }}</p>
                 </div>
                 
-                {% if ticket.tags %}
-                <div class="mb-3">
-                    <h6 class="text-muted">Tags</h6>
-                    {% for tag in ticket.tags %}
-                    <span class="badge bg-secondary me-1">{{ tag }}</span>
-                    {% endfor %}
+                <hr>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <small class="text-muted">ID Completo</small>
+                        <p><code>{{ ticket.id }}</code></p>
+                    </div>
+                    <div class="col-md-6">
+                        <small class="text-muted">Categoria</small>
+                        <p>{{ ticket.categoria }}</p>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <small class="text-muted">Criado por</small>
+                        <p>{{ ticket.criador_id }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <small class="text-muted">Atribuído a</small>
+                        <p>{{ ticket.atribuido_a_id|default:"Não atribuído" }}</p>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <small class="text-muted">Criado em</small>
+                        <p>{{ ticket.criado_em|date:"d/m/Y H:i:s" }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <small class="text-muted">Atualizado em</small>
+                        <p>{{ ticket.atualizado_em|date:"d/m/Y H:i:s" }}</p>
+                    </div>
+                </div>
+                
+                {% if ticket.sla_prazo %}
+                <div class="row">
+                    <div class="col-md-6">
+                        <small class="text-muted">Prazo SLA</small>
+                        <p class="{% if ticket.esta_atrasado %}sla-atrasado{% endif %}">
+                            {% if ticket.esta_atrasado %}
+                            <i class="bi bi-exclamation-triangle me-1"></i>
+                            {% endif %}
+                            {{ ticket.sla_prazo|date:"d/m/Y H:i:s" }}
+                            {% if ticket.esta_atrasado %}(Atrasado){% endif %}
+                        </p>
+                    </div>
                 </div>
                 {% endif %}
-            </div>
-        </div>
-        
-        <!-- Ações -->
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0"><i class="bi bi-gear"></i> Ações</h5>
-            </div>
-            <div class="card-body">
-                <div class="row">
-                    <!-- Atribuir -->
-                    {% if ticket.status != 'Fechado' %}
-                    <div class="col-md-6 mb-3">
-                        <h6>Atribuir a Técnico</h6>
-                        <form method="post" action="{% url 'tickets:atribuir' pk=ticket.id %}" class="d-flex">
-                            {% csrf_token %}
-                            <input type="text" name="tecnico_id" class="form-control me-2" placeholder="ID do técnico" required>
-                            <button type="submit" class="btn btn-primary">
-                                <i class="bi bi-person-plus"></i>
-                            </button>
-                        </form>
-                    </div>
-                    {% endif %}
-                    
-                    <!-- Fechar/Reabrir -->
-                    <div class="col-md-6 mb-3">
-                        {% if ticket.status == 'Fechado' %}
-                        <h6>Reabrir Ticket</h6>
-                        <form method="post" action="{% url 'tickets:reabrir' pk=ticket.id %}">
-                            {% csrf_token %}
-                            <input type="text" name="motivo" class="form-control mb-2" placeholder="Motivo (opcional)">
-                            <button type="submit" class="btn btn-warning">
-                                <i class="bi bi-arrow-counterclockwise"></i> Reabrir
-                            </button>
-                        </form>
-                        {% elif ticket.atribuido_a_id %}
-                        <h6>Fechar Ticket</h6>
-                        <form method="post" action="{% url 'tickets:fechar' pk=ticket.id %}">
-                            {% csrf_token %}
-                            <input type="text" name="resolucao" class="form-control mb-2" placeholder="Resolução (opcional)">
-                            <button type="submit" class="btn btn-success">
-                                <i class="bi bi-check-circle"></i> Fechar
-                            </button>
-                        </form>
-                        {% else %}
-                        <h6>Fechar Ticket</h6>
-                        <p class="text-muted small">
-                            <i class="bi bi-info-circle"></i>
-                            Atribua o ticket antes de fechá-lo.
-                        </p>
-                        {% endif %}
-                    </div>
-                </div>
             </div>
         </div>
     </div>
     
-    <!-- Sidebar -->
-    <div class="col-md-4">
+    <!-- Coluna de Ações -->
+    <div class="col-lg-4">
+        <!-- Ações Rápidas -->
         <div class="card mb-4">
             <div class="card-header">
-                <h5 class="mb-0"><i class="bi bi-info-circle"></i> Informações</h5>
+                <i class="bi bi-lightning me-1"></i> Ações
             </div>
             <div class="card-body">
-                <table class="table table-sm table-borderless mb-0">
-                    <tr>
-                        <th class="text-muted">ID</th>
-                        <td><code>{{ ticket.id }}</code></td>
-                    </tr>
-                    <tr>
-                        <th class="text-muted">Status</th>
-                        <td>
-                            <span class="badge badge-status-{{ ticket.status|lower|slugify }}">
-                                {{ ticket.status }}
-                            </span>
-                        </td>
-                    </tr>
-                    <tr>
-                        <th class="text-muted">Prioridade</th>
-                        <td>
-                            <span class="badge badge-prioridade-{{ ticket.prioridade|lower }}">
-                                {{ ticket.prioridade }}
-                            </span>
-                        </td>
-                    </tr>
-                    <tr>
-                        <th class="text-muted">Categoria</th>
-                        <td>{{ ticket.categoria }}</td>
-                    </tr>
-                    <tr>
-                        <th class="text-muted">Criador</th>
-                        <td><code>{{ ticket.criador_id }}</code></td>
-                    </tr>
-                    <tr>
-                        <th class="text-muted">Atribuído a</th>
-                        <td>
-                            {% if ticket.atribuido_a_id %}
-                            <code>{{ ticket.atribuido_a_id }}</code>
-                            {% else %}
-                            <span class="text-muted">Não atribuído</span>
-                            {% endif %}
-                        </td>
-                    </tr>
-                    <tr>
-                        <th class="text-muted">Criado em</th>
-                        <td>{{ ticket.criado_em|date:"d/m/Y H:i" }}</td>
-                    </tr>
-                    <tr>
-                        <th class="text-muted">Atualizado em</th>
-                        <td>{{ ticket.atualizado_em|date:"d/m/Y H:i" }}</td>
-                    </tr>
-                </table>
+                {% if ticket.status != 'Fechado' %}
+                
+                <!-- Atribuir -->
+                {% if not ticket.atribuido_a_id %}
+                <form method="post" action="{% url 'tickets:atribuir' pk=ticket.id %}" class="mb-3">
+                    {% csrf_token %}
+                    <label class="form-label">Atribuir a:</label>
+                    <div class="input-group">
+                        <input type="text" name="tecnico_id" class="form-control" 
+                               placeholder="ID do técnico" required>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-person-plus"></i>
+                        </button>
+                    </div>
+                </form>
+                {% endif %}
+                
+                <!-- Alterar Prioridade -->
+                <form method="post" action="{% url 'tickets:prioridade' pk=ticket.id %}" class="mb-3">
+                    {% csrf_token %}
+                    <label class="form-label">Prioridade:</label>
+                    <div class="input-group">
+                        {{ prioridade_form.prioridade }}
+                        <button type="submit" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-repeat"></i>
+                        </button>
+                    </div>
+                </form>
+                
+                <!-- Fechar -->
+                {% if ticket.atribuido_a_id %}
+                <form method="post" action="{% url 'tickets:fechar' pk=ticket.id %}">
+                    {% csrf_token %}
+                    <label class="form-label">Fechar Ticket:</label>
+                    <textarea name="resolucao" class="form-control mb-2" rows="2" 
+                              placeholder="Resolução (opcional)"></textarea>
+                    <button type="submit" class="btn btn-success w-100">
+                        <i class="bi bi-check-circle me-1"></i> Fechar Ticket
+                    </button>
+                </form>
+                {% else %}
+                <div class="alert alert-info mb-0">
+                    <i class="bi bi-info-circle me-1"></i>
+                    Atribua o ticket a um técnico antes de fechá-lo.
+                </div>
+                {% endif %}
+                
+                {% else %}
+                
+                <!-- Reabrir -->
+                <form method="post" action="{% url 'tickets:reabrir' pk=ticket.id %}">
+                    {% csrf_token %}
+                    <label class="form-label">Reabrir Ticket:</label>
+                    <textarea name="motivo" class="form-control mb-2" rows="2" 
+                              placeholder="Motivo da reabertura (opcional)"></textarea>
+                    <button type="submit" class="btn btn-warning w-100">
+                        <i class="bi bi-arrow-counterclockwise me-1"></i> Reabrir Ticket
+                    </button>
+                </form>
+                
+                {% endif %}
             </div>
         </div>
         
-        <!-- SLA -->
+        <!-- Info Card -->
         <div class="card">
             <div class="card-header">
-                <h5 class="mb-0"><i class="bi bi-clock"></i> SLA</h5>
+                <i class="bi bi-info-circle me-1"></i> Informações
             </div>
             <div class="card-body">
-                {% if ticket.sla_prazo %}
-                <p class="mb-2">
-                    <strong>Prazo:</strong> {{ ticket.sla_prazo|date:"d/m/Y H:i" }}
-                </p>
-                {% if ticket.esta_atrasado %}
-                <div class="alert alert-danger mb-0">
-                    <i class="bi bi-exclamation-triangle"></i>
-                    <strong>Atrasado!</strong>
+                <div class="d-flex justify-content-between mb-2">
+                    <span class="text-muted">Status</span>
+                    {% include 'includes/status_badge.html' with status=ticket.status %}
                 </div>
-                {% elif ticket.status == 'Fechado' %}
-                <div class="alert alert-success mb-0">
-                    <i class="bi bi-check-circle"></i>
-                    Ticket fechado
+                <div class="d-flex justify-content-between mb-2">
+                    <span class="text-muted">Prioridade</span>
+                    {% include 'includes/prioridade_badge.html' with prioridade=ticket.prioridade %}
                 </div>
-                {% else %}
-                <div class="alert alert-info mb-0">
-                    <i class="bi bi-clock-history"></i>
-                    Dentro do prazo
+                <div class="d-flex justify-content-between mb-2">
+                    <span class="text-muted">SLA</span>
+                    {% if ticket.esta_atrasado %}
+                    <span class="badge bg-danger">Atrasado</span>
+                    {% elif ticket.status == 'Fechado' %}
+                    <span class="badge bg-secondary">Fechado</span>
+                    {% else %}
+                    <span class="badge bg-success">No prazo</span>
+                    {% endif %}
                 </div>
-                {% endif %}
-                {% else %}
-                <p class="text-muted mb-0">SLA não definido</p>
-                {% endif %}
             </div>
         </div>
     </div>
+</div>
+
+<div class="mt-3">
+    <a href="{% url 'tickets:list' %}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-1"></i> Voltar para Lista
+    </a>
 </div>
 {% endblock %}

@@ -1,0 +1,18 @@
+{% comment %}
+Include para exibir badge de status do ticket.
+Uso: {% include 'includes/status_badge.html' with status=ticket.status %}
+{% endcomment %}
+
+{% if status == 'Aberto' %}
+<span class="badge badge-status badge-aberto">Aberto</span>
+{% elif status == 'Em Progresso' %}
+<span class="badge badge-status badge-em-progresso">Em Progresso</span>
+{% elif status == 'Aguardando Cliente' %}
+<span class="badge badge-status badge-aguardando-cliente">Aguardando Cliente</span>
+{% elif status == 'Resolvido' %}
+<span class="badge badge-status badge-resolvido">Resolvido</span>
+{% elif status == 'Fechado' %}
+<span class="badge badge-status badge-fechado">Fechado</span>
+{% else %}
+<span class="badge badge-status bg-secondary">{{ status }}</span>
+{% endif %}

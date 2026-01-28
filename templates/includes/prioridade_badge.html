@@ -1,0 +1,16 @@
+{% comment %}
+Include para exibir badge de prioridade do ticket.
+Uso: {% include 'includes/prioridade_badge.html' with prioridade=ticket.prioridade %}
+{% endcomment %}
+
+{% if prioridade == 'Baixa' %}
+<span class="badge badge-status badge-baixa">Baixa</span>
+{% elif prioridade == 'Média' %}
+<span class="badge badge-status badge-media">Média</span>
+{% elif prioridade == 'Alta' %}
+<span class="badge badge-status badge-alta">Alta</span>
+{% elif prioridade == 'Crítica' %}
+<span class="badge badge-status badge-critica">Crítica</span>
+{% else %}
+<span class="badge badge-status bg-secondary">{{ prioridade }}</span>
+{% endif %}

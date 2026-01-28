@@ -1,0 +1,217 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard - TechSupport Manager{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-speedometer2 me-2"></i>Dashboard</h2>
+    <a href="{% url 'tickets:create' %}" class="btn btn-primary">
+        <i class="bi bi-plus-circle me-1"></i> Novo Ticket
+    </a>
+</div>
+
+<!-- Estatísticas Gerais -->
+<div class="row mb-4">
+    <div class="col-md-3 mb-3">
+        <div class="card stat-card h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="stat-value">{{ estatisticas.total|default:0 }}</div>
+                        <div class="stat-label">Total de Tickets</div>
+                    </div>
+                    <i class="bi bi-ticket-detailed text-primary" style="font-size: 2rem; opacity: 0.5;"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card stat-card info h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="stat-value">{{ estatisticas.por_status.Aberto|default:0 }}</div>
+                        <div class="stat-label">Abertos</div>
+                    </div>
+                    <i class="bi bi-inbox text-info" style="font-size: 2rem; opacity: 0.5;"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card stat-card warning h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="stat-value">{{ estatisticas.por_status.Em Progresso|default:0 }}</div>
+                        <div class="stat-label">Em Progresso</div>
+                    </div>
+                    <i class="bi bi-hourglass-split text-warning" style="font-size: 2rem; opacity: 0.5;"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card stat-card danger h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="stat-value">{{ tickets_atrasados|length }}</div>
+                        <div class="stat-label">Atrasados</div>
+                    </div>
+                    <i class="bi bi-exclamation-triangle text-danger" style="font-size: 2rem; opacity: 0.5;"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Tickets Atrasados -->
+    <div class="col-lg-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header bg-danger text-white">
+                <i class="bi bi-exclamation-triangle me-1"></i>
+                Tickets Atrasados
+            </div>
+            <div class="card-body p-0">
+                {% if tickets_atrasados %}
+                <ul class="list-group list-group-flush">
+                    {% for ticket in tickets_atrasados %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <a href="{% url 'tickets:detail' pk=ticket.id %}" class="text-decoration-none">
+                                {{ ticket.titulo|truncatechars:40 }}
+                            </a>
+                            <br>
+                            <small class="text-muted">
+                                SLA: {{ ticket.sla_prazo|date:"d/m H:i" }}
+                            </small>
+                        </div>
+                        {% include 'includes/prioridade_badge.html' with prioridade=ticket.prioridade %}
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <div class="text-center py-4 text-muted">
+                    <i class="bi bi-check-circle" style="font-size: 2rem;"></i>
+                    <p class="mb-0 mt-2">Nenhum ticket atrasado!</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Tickets Recentes -->
+    <div class="col-lg-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <i class="bi bi-clock-history me-1"></i>
+                Tickets Recentes
+            </div>
+            <div class="card-body p-0">
+                {% if tickets_recentes %}
+                <ul class="list-group list-group-flush">
+                    {% for ticket in tickets_recentes %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <a href="{% url 'tickets:detail' pk=ticket.id %}" class="text-decoration-none">
+                                {{ ticket.titulo|truncatechars:40 }}
+                            </a>
+                            <br>
+                            <small class="text-muted">
+                                {{ ticket.criado_em|date:"d/m/Y H:i" }}
+                            </small>
+                        </div>
+                        {% include 'includes/status_badge.html' with status=ticket.status %}
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <div class="text-center py-4 text-muted">
+                    <i class="bi bi-inbox" style="font-size: 2rem;"></i>
+                    <p class="mb-0 mt-2">Nenhum ticket ainda</p>
+                </div>
+                {% endif %}
+            </div>
+            <div class="card-footer text-end">
+                <a href="{% url 'tickets:list' %}" class="btn btn-sm btn-outline-primary">
+                    Ver todos <i class="bi bi-arrow-right"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Tickets Abertos -->
+    <div class="col-lg-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header bg-info text-white">
+                <i class="bi bi-inbox me-1"></i>
+                Aguardando Atribuição
+            </div>
+            <div class="card-body p-0">
+                {% if tickets_abertos %}
+                <ul class="list-group list-group-flush">
+                    {% for ticket in tickets_abertos %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <a href="{% url 'tickets:detail' pk=ticket.id %}" class="text-decoration-none">
+                                {{ ticket.titulo|truncatechars:40 }}
+                            </a>
+                            <br>
+                            <small class="text-muted">
+                                {{ ticket.categoria }}
+                            </small>
+                        </div>
+                        {% include 'includes/prioridade_badge.html' with prioridade=ticket.prioridade %}
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <div class="text-center py-4 text-muted">
+                    <i class="bi bi-check-circle" style="font-size: 2rem;"></i>
+                    <p class="mb-0 mt-2">Todos os tickets atribuídos!</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Tickets Em Progresso -->
+    <div class="col-lg-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header bg-warning">
+                <i class="bi bi-hourglass-split me-1"></i>
+                Em Progresso
+            </div>
+            <div class="card-body p-0">
+                {% if tickets_em_progresso %}
+                <ul class="list-group list-group-flush">
+                    {% for ticket in tickets_em_progresso %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <a href="{% url 'tickets:detail' pk=ticket.id %}" class="text-decoration-none">
+                                {{ ticket.titulo|truncatechars:40 }}
+                            </a>
+                            <br>
+                            <small class="text-muted">
+                                Técnico: {{ ticket.atribuido_a_id }}
+                            </small>
+                        </div>
+                        {% include 'includes/prioridade_badge.html' with prioridade=ticket.prioridade %}
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <div class="text-center py-4 text-muted">
+                    <i class="bi bi-pause-circle" style="font-size: 2rem;"></i>
+                    <p class="mb-0 mt-2">Nenhum ticket em progresso</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -230,3 +230,24 @@ class TicketFiltroForm(forms.Form):
             'class': 'form-check-input',
         }),
     )
+
+
+class TicketAlterarPrioridadeForm(forms.Form):
+    """
+    Form para alteração de prioridade.
+    
+    Usado na view de detalhes para alterar prioridade do ticket.
+    """
+    
+    prioridade = forms.ChoiceField(
+        label='Nova Prioridade',
+        choices=[
+            ('BAIXA', 'Baixa'),
+            ('MEDIA', 'Média'),
+            ('ALTA', 'Alta'),
+            ('CRITICA', 'Crítica'),
+        ],
+        widget=forms.Select(attrs={
+            'class': 'form-control',
+        }),
+    )
