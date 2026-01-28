@@ -2,160 +2,175 @@
 # TechSupport Manager - Makefile
 # =============================================================================
 
-.PHONY: help install install-dev test test-cov lint format clean db-up db-down migrate shell
+.PHONY: help install test lint format migrate runserver \
+        db-up db-down db-logs infra-up infra-down infra-logs \
+        celery-worker celery-beat celery-flower full-up full-down
 
-# Variáveis
-PYTHON = python3
-PIP = pip3
-PYTEST = pytest
-MANAGE = python manage.py
-DOCKER_COMPOSE = docker-compose
-SRC_DIR = src
-TEST_DIR = tests
+# -----------------------------------------------------------------------------
+# Help
+# -----------------------------------------------------------------------------
+help:
+	@echo "TechSupport Manager - Comandos Disponíveis"
+	@echo ""
+	@echo "Setup:"
+	@echo "  make install       - Instala dependências"
+	@echo "  make migrate       - Executa migrações"
+	@echo "  make init          - Setup completo inicial"
+	@echo ""
+	@echo "Desenvolvimento:"
+	@echo "  make runserver     - Inicia servidor Django"
+	@echo "  make shell         - Django shell"
+	@echo "  make createsuperuser - Cria superusuário"
+	@echo ""
+	@echo "Infraestrutura:"
+	@echo "  make db-up         - Inicia PostgreSQL"
+	@echo "  make db-down       - Para PostgreSQL"
+	@echo "  make infra-up      - Inicia toda infraestrutura (postgres, redis, rabbitmq)"
+	@echo "  make infra-down    - Para toda infraestrutura"
+	@echo ""
+	@echo "Celery:"
+	@echo "  make celery-worker - Inicia Celery worker"
+	@echo "  make celery-beat   - Inicia Celery beat (tarefas agendadas)"
+	@echo "  make celery-flower - Inicia Flower (monitoramento)"
+	@echo ""
+	@echo "Docker Full Stack:"
+	@echo "  make full-up       - Inicia aplicação completa via Docker"
+	@echo "  make full-down     - Para aplicação completa"
+	@echo ""
+	@echo "Testes:"
+	@echo "  make test          - Roda todos os testes"
+	@echo "  make test-cov      - Testes com cobertura"
+	@echo "  make test-core     - Apenas testes do core"
+	@echo "  make test-integration - Testes de integração"
+	@echo ""
+	@echo "Qualidade:"
+	@echo "  make lint          - Verifica código"
+	@echo "  make format        - Formata código"
 
-# Cores para output
-GREEN = \033[0;32m
-YELLOW = \033[1;33m
-NC = \033[0m # No Color
+# -----------------------------------------------------------------------------
+# Setup
+# -----------------------------------------------------------------------------
+install:
+	pip install --break-system-packages -r requirements.txt
 
-help: ## Mostra esta mensagem de ajuda
-	@echo "Comandos disponíveis:"
-	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "  $(GREEN)%-15s$(NC) %s\n", $$1, $$2}'
+migrate:
+	python manage.py migrate
 
-# =============================================================================
-# Instalação
-# =============================================================================
+migrations:
+	python manage.py makemigrations
 
-install: ## Instala dependências de produção
-	$(PIP) install -r requirements.txt
+init: install db-up migrate
+	@echo "Setup completo! Execute: make runserver"
 
-install-dev: ## Instala dependências de desenvolvimento
-	$(PIP) install -r requirements.txt
-	$(PIP) install mypy black isort flake8
+# -----------------------------------------------------------------------------
+# Desenvolvimento
+# -----------------------------------------------------------------------------
+runserver:
+	python manage.py runserver
 
-venv: ## Cria ambiente virtual
-	$(PYTHON) -m venv venv
-	@echo "Ative com: source venv/bin/activate"
+shell:
+	python manage.py shell
 
-# =============================================================================
-# Docker / Infraestrutura
-# =============================================================================
+createsuperuser:
+	python manage.py createsuperuser
 
-db-up: ## Inicia PostgreSQL via Docker
-	$(DOCKER_COMPOSE) up -d postgres
-	@echo "$(GREEN)PostgreSQL iniciado em localhost:5432$(NC)"
-	@echo "Aguardando banco estar pronto..."
-	@sleep 3
+# -----------------------------------------------------------------------------
+# Infraestrutura - Banco de Dados
+# -----------------------------------------------------------------------------
+db-up:
+	docker-compose up -d postgres
+	@echo "PostgreSQL iniciado. Aguarde healthcheck..."
+	@sleep 5
 
-db-down: ## Para PostgreSQL
-	$(DOCKER_COMPOSE) down
+db-down:
+	docker-compose stop postgres
 
-db-logs: ## Exibe logs do PostgreSQL
-	$(DOCKER_COMPOSE) logs -f postgres
+db-logs:
+	docker-compose logs -f postgres
 
-infra-up: ## Inicia toda infraestrutura (postgres, redis, rabbitmq)
-	$(DOCKER_COMPOSE) up -d
-	@echo "$(GREEN)Infraestrutura iniciada!$(NC)"
-	@echo "  PostgreSQL: localhost:5432"
-	@echo "  Redis: localhost:6379"
-	@echo "  RabbitMQ: localhost:5672 (UI: localhost:15672)"
-	@echo "  Adminer: localhost:8080"
+# -----------------------------------------------------------------------------
+# Infraestrutura - Completa
+# -----------------------------------------------------------------------------
+infra-up:
+	docker-compose up -d postgres redis rabbitmq adminer
+	@echo "Infraestrutura iniciada:"
+	@echo "  - PostgreSQL: localhost:5432"
+	@echo "  - Redis: localhost:6379"
+	@echo "  - RabbitMQ: localhost:5672 (UI: localhost:15672)"
+	@echo "  - Adminer: localhost:8080"
 
-infra-down: ## Para toda infraestrutura
-	$(DOCKER_COMPOSE) down
+infra-down:
+	docker-compose down
 
-infra-clean: ## Para e remove volumes (CUIDADO: apaga dados!)
-	$(DOCKER_COMPOSE) down -v
-	@echo "$(YELLOW)Volumes removidos!$(NC)"
+infra-logs:
+	docker-compose logs -f
 
-# =============================================================================
-# Django
-# =============================================================================
+infra-clean:
+	docker-compose down -v
 
-migrate: ## Executa migrations
-	$(MANAGE) migrate
+# -----------------------------------------------------------------------------
+# Celery
+# -----------------------------------------------------------------------------
+celery-worker:
+	celery -A src.config.celery worker -l INFO -Q default,events,notifications
 
-migrations: ## Cria novas migrations
-	$(MANAGE) makemigrations
+celery-beat:
+	celery -A src.config.celery beat -l INFO
 
-shell: ## Abre shell Django
-	$(MANAGE) shell
+celery-flower:
+	celery -A src.config.celery flower --port=5555
 
-createsuperuser: ## Cria superusuário
-	$(MANAGE) createsuperuser
+# -----------------------------------------------------------------------------
+# Docker Full Stack
+# -----------------------------------------------------------------------------
+full-up:
+	docker-compose --profile full up -d
+	@echo "Aplicação completa iniciada:"
+	@echo "  - Web: localhost:8000"
+	@echo "  - Flower: localhost:5555"
+	@echo "  - Adminer: localhost:8080"
+	@echo "  - RabbitMQ: localhost:15672"
 
-runserver: ## Inicia servidor de desenvolvimento
-	$(MANAGE) runserver
+full-down:
+	docker-compose --profile full down
 
-collectstatic: ## Coleta arquivos estáticos
-	$(MANAGE) collectstatic --noinput
+full-logs:
+	docker-compose --profile full logs -f
 
-# =============================================================================
+full-build:
+	docker-compose --profile full build
+
+# -----------------------------------------------------------------------------
 # Testes
-# =============================================================================
+# -----------------------------------------------------------------------------
+test:
+	pytest tests/ -v
 
-test: ## Executa testes
-	$(PYTEST) $(TEST_DIR) -v
+test-cov:
+	pytest tests/ -v --cov=src --cov-report=html --cov-report=term
 
-test-cov: ## Executa testes com cobertura
-	$(PYTEST) $(TEST_DIR) -v --cov=$(SRC_DIR)/core --cov=$(SRC_DIR)/adapters --cov-report=term-missing --cov-report=html
+test-core:
+	pytest tests/core/ -v
 
-test-fast: ## Executa testes rápidos (sem markers slow)
-	$(PYTEST) $(TEST_DIR) -v -m "not slow"
+test-adapters:
+	pytest tests/adapters/ -v
 
-test-integration: ## Executa testes de integração
-	$(PYTEST) $(TEST_DIR)/adapters -v
+test-integration:
+	pytest tests/integration/ -v
 
-test-core: ## Executa apenas testes do Core
-	$(PYTEST) $(TEST_DIR)/core -v
+test-fast:
+	pytest tests/ -v -x --tb=short
 
-# =============================================================================
+# -----------------------------------------------------------------------------
 # Qualidade de Código
-# =============================================================================
+# -----------------------------------------------------------------------------
+lint:
+	flake8 src/ tests/
+	mypy src/
 
-lint: ## Verifica código com flake8
-	flake8 $(SRC_DIR) $(TEST_DIR)
+format:
+	black src/ tests/
+	isort src/ tests/
 
-format: ## Formata código com black e isort
-	isort $(SRC_DIR) $(TEST_DIR)
-	black $(SRC_DIR) $(TEST_DIR)
-
-format-check: ## Verifica formatação sem alterar
-	isort --check-only $(SRC_DIR) $(TEST_DIR)
-	black --check $(SRC_DIR) $(TEST_DIR)
-
-typecheck: ## Verifica tipos com mypy
-	mypy $(SRC_DIR)
-
-# =============================================================================
-# Limpeza
-# =============================================================================
-
-clean: ## Remove arquivos de cache e build
-	find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
-	find . -type d -name ".pytest_cache" -exec rm -rf {} + 2>/dev/null || true
-	find . -type d -name "*.egg-info" -exec rm -rf {} + 2>/dev/null || true
-	find . -type d -name ".mypy_cache" -exec rm -rf {} + 2>/dev/null || true
-	find . -type f -name "*.pyc" -delete 2>/dev/null || true
-	find . -type f -name ".coverage" -delete 2>/dev/null || true
-	rm -rf htmlcov/ 2>/dev/null || true
-	rm -rf build/ dist/ 2>/dev/null || true
-	@echo "Limpeza concluída!"
-
-# =============================================================================
-# Setup Completo
-# =============================================================================
-
-init: install db-up migrate ## Setup completo: instala deps, inicia DB, roda migrations
-	cp -n .env.example .env 2>/dev/null || true
-	@echo "$(GREEN)=== Projeto inicializado! ===$(NC)"
-	@echo ""
-	@echo "Próximos passos:"
-	@echo "  1. Edite .env com suas configurações"
-	@echo "  2. make createsuperuser"
-	@echo "  3. make runserver"
-	@echo ""
-
-check: lint format-check test ## Executa todas as verificações
-
-all: clean install-dev db-up migrate check ## Rebuild completo
+check: lint test
+	@echo "Verificações completas!"

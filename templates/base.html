@@ -1,59 +1,79 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-br">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}TechSupport Manager{% endblock %}</title>
     
-    <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    
     <!-- Bootstrap Icons -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
     
     <style>
         :root {
-            --primary-color: #4f46e5;
-            --secondary-color: #6b7280;
+            --primary-color: #4361ee;
+            --success-color: #2ec4b6;
+            --warning-color: #ff9f1c;
+            --danger-color: #e71d36;
+            --info-color: #4cc9f0;
         }
         
         body {
-            background-color: #f3f4f6;
+            background-color: #f8f9fa;
+            min-height: 100vh;
         }
         
         .navbar {
-            background-color: var(--primary-color) !important;
+            background: linear-gradient(135deg, var(--primary-color) 0%, #3a0ca3 100%);
         }
         
         .card {
             border: none;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
         }
         
-        .badge-status-aberto { background-color: #3b82f6; }
-        .badge-status-em-progresso { background-color: #f59e0b; }
-        .badge-status-aguardando { background-color: #6b7280; }
-        .badge-status-resolvido { background-color: #10b981; }
-        .badge-status-fechado { background-color: #1f2937; }
-        
-        .badge-prioridade-baixa { background-color: #10b981; }
-        .badge-prioridade-media { background-color: #f59e0b; }
-        .badge-prioridade-alta { background-color: #f97316; }
-        .badge-prioridade-critica { background-color: #ef4444; }
-        
-        .ticket-card:hover {
-            transform: translateY(-2px);
-            transition: transform 0.2s;
+        .card-header {
+            background-color: #fff;
+            border-bottom: 1px solid #e9ecef;
+            font-weight: 600;
         }
+        
+        .badge-status { font-size: 0.75rem; padding: 0.35em 0.65em; }
+        .badge-aberto { background-color: var(--info-color); }
+        .badge-em-progresso { background-color: var(--warning-color); }
+        .badge-aguardando-cliente { background-color: #6c757d; }
+        .badge-resolvido { background-color: var(--success-color); }
+        .badge-fechado { background-color: #343a40; }
+        
+        .badge-baixa { background-color: var(--success-color); }
+        .badge-media { background-color: var(--warning-color); }
+        .badge-alta { background-color: #fd7e14; }
+        .badge-critica { background-color: var(--danger-color); }
+        
+        .stat-card { border-left: 4px solid var(--primary-color); }
+        .stat-card.success { border-left-color: var(--success-color); }
+        .stat-card.warning { border-left-color: var(--warning-color); }
+        .stat-card.danger { border-left-color: var(--danger-color); }
+        .stat-card.info { border-left-color: var(--info-color); }
+        .stat-card .stat-value { font-size: 2rem; font-weight: 700; }
+        .stat-card .stat-label { color: #6c757d; font-size: 0.875rem; text-transform: uppercase; }
+        
+        .sla-atrasado { color: var(--danger-color); font-weight: 600; }
+        
+        .empty-state { text-align: center; padding: 3rem 1rem; color: #6c757d; }
+        .empty-state i { font-size: 4rem; margin-bottom: 1rem; opacity: 0.5; }
+        
+        .content-wrapper { padding: 1.5rem; }
     </style>
-    
     {% block extra_css %}{% endblock %}
 </head>
 <body>
-    <!-- Navbar -->
-    <nav class="navbar navbar-expand-lg navbar-dark mb-4">
-        <div class="container">
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container-fluid">
             <a class="navbar-brand" href="{% url 'tickets:list' %}">
-                <i class="bi bi-ticket-detailed"></i> TechSupport
+                <i class="bi bi-headset me-2"></i>TechSupport Manager
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
@@ -61,55 +81,45 @@
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto">
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'tickets:list' %}">
-                            <i class="bi bi-list-ul"></i> Tickets
+                        <a class="nav-link" href="{% url 'tickets:dashboard' %}">
+                            <i class="bi bi-speedometer2 me-1"></i> Dashboard
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'tickets:create' %}">
-                            <i class="bi bi-plus-circle"></i> Novo Ticket
+                        <a class="nav-link" href="{% url 'tickets:list' %}">
+                            <i class="bi bi-ticket-detailed me-1"></i> Tickets
                         </a>
                     </li>
                 </ul>
                 <ul class="navbar-nav">
                     <li class="nav-item">
-                        <a class="nav-link" href="/admin/">
-                            <i class="bi bi-gear"></i> Admin
+                        <a class="nav-link btn btn-outline-light btn-sm px-3" href="{% url 'tickets:create' %}">
+                            <i class="bi bi-plus-circle me-1"></i> Novo Ticket
                         </a>
                     </li>
                 </ul>
             </div>
         </div>
     </nav>
-    
-    <!-- Content -->
-    <main class="container mb-5">
-        {% if messages %}
-        <div class="row mb-3">
-            <div class="col">
+
+    <div class="container-fluid">
+        <main class="content-wrapper">
+            {% if messages %}
+            <div class="messages mb-3">
                 {% for message in messages %}
-                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %} alert-dismissible fade show">
                     {{ message }}
                     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
                 {% endfor %}
             </div>
-        </div>
-        {% endif %}
-        
-        {% block content %}{% endblock %}
-    </main>
-    
-    <!-- Footer -->
-    <footer class="bg-white py-4 mt-auto border-top">
-        <div class="container text-center text-muted">
-            <small>TechSupport Manager - Arquitetura Hexagonal com Django</small>
-        </div>
-    </footer>
-    
-    <!-- Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    
+            {% endif %}
+            
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     {% block extra_js %}{% endblock %}
 </body>
 </html>

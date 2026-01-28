@@ -290,16 +290,43 @@ SLA_HOURS = {
 }
 
 # =============================================================================
-# Event Bus (preparado para Celery/RabbitMQ)
+# Celery / Event Bus
 # =============================================================================
 
-RABBITMQ_URL = os.getenv('RABBITMQ_URL')
+# Broker URL (RabbitMQ)
+CELERY_BROKER_URL = os.getenv(
+    'CELERY_BROKER_URL',
+    os.getenv('RABBITMQ_URL', 'amqp://guest:guest@localhost:5672//')
+)
 
-# Celery settings (para Etapa 4)
-if RABBITMQ_URL:
-    CELERY_BROKER_URL = RABBITMQ_URL
-    CELERY_RESULT_BACKEND = REDIS_URL or 'django-db'
-    CELERY_ACCEPT_CONTENT = ['json']
-    CELERY_TASK_SERIALIZER = 'json'
-    CELERY_RESULT_SERIALIZER = 'json'
-    CELERY_TIMEZONE = TIME_ZONE
+# Backend de resultados (Redis)
+CELERY_RESULT_BACKEND = os.getenv(
+    'CELERY_RESULT_BACKEND',
+    REDIS_URL + '/1' if REDIS_URL else 'redis://localhost:6379/1'
+)
+
+# Serialização
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+
+# Timezone
+CELERY_TIMEZONE = TIME_ZONE
+CELERY_ENABLE_UTC = True
+
+# Configurações de execução
+CELERY_TASK_ACKS_LATE = True
+CELERY_TASK_REJECT_ON_WORKER_LOST = True
+CELERY_WORKER_PREFETCH_MULTIPLIER = 1
+
+# Retry
+CELERY_TASK_DEFAULT_RETRY_DELAY = 60
+CELERY_TASK_MAX_RETRIES = 3
+
+# Resultados
+CELERY_RESULT_EXPIRES = 3600  # 1 hora
+
+# Event Publisher mode
+# 'sync' = LoggingEventPublisher (desenvolvimento)
+# 'celery' = CeleryEventPublisher (produção)
+EVENT_PUBLISHER_MODE = os.getenv('EVENT_PUBLISHER_MODE', 'sync')
