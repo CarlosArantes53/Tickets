@@ -1,0 +1,143 @@
+# =============================================================================
+# TechSupport Manager - Docker Compose para Desenvolvimento
+# =============================================================================
+# 
+# Este arquivo configura a infraestrutura local para desenvolvimento:
+# - PostgreSQL (banco principal)
+# - Redis (cache e message broker - futuro)
+# - RabbitMQ (eventos - futuro)
+#
+# Uso:
+#   docker-compose up -d postgres    # Apenas banco
+#   docker-compose up -d             # Toda infraestrutura
+#   docker-compose down              # Parar tudo
+#   docker-compose down -v           # Parar e remover volumes
+#
+# =============================================================================
+
+version: '3.8'
+
+services:
+  # ===========================================================================
+  # PostgreSQL - Banco de Dados Principal
+  # ===========================================================================
+  postgres:
+    image: postgres:16-alpine
+    container_name: techsupport_postgres
+    restart: unless-stopped
+    
+    environment:
+      POSTGRES_DB: techsupport_db
+      POSTGRES_USER: techsupport_user
+      POSTGRES_PASSWORD: techsupport_pass
+      # Otimizações para desenvolvimento
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=C --lc-ctype=C"
+    
+    ports:
+      - "5432:5432"
+    
+    volumes:
+      # Persistência de dados
+      - postgres_data:/var/lib/postgresql/data
+      # Scripts de inicialização (opcional)
+      - ./scripts/init-db:/docker-entrypoint-initdb.d:ro
+    
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U techsupport_user -d techsupport_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    
+    # Configurações de performance para desenvolvimento
+    command:
+      - "postgres"
+      - "-c"
+      - "max_connections=100"
+      - "-c"
+      - "shared_buffers=256MB"
+      - "-c"
+      - "log_statement=all"  # Log todas as queries (dev only)
+
+  # ===========================================================================
+  # Redis - Cache e Message Broker (para Etapa 4+)
+  # ===========================================================================
+  redis:
+    image: redis:7-alpine
+    container_name: techsupport_redis
+    restart: unless-stopped
+    
+    ports:
+      - "6379:6379"
+    
+    volumes:
+      - redis_data:/data
+    
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    
+    command: redis-server --appendonly yes
+
+  # ===========================================================================
+  # RabbitMQ - Message Broker (para Etapa 4+)
+  # ===========================================================================
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: techsupport_rabbitmq
+    restart: unless-stopped
+    
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+      RABBITMQ_DEFAULT_VHOST: /
+    
+    ports:
+      - "5672:5672"    # AMQP
+      - "15672:15672"  # Management UI
+    
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "check_running"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # ===========================================================================
+  # Adminer - Interface Web para Banco (opcional, dev only)
+  # ===========================================================================
+  adminer:
+    image: adminer:latest
+    container_name: techsupport_adminer
+    restart: unless-stopped
+    
+    ports:
+      - "8080:8080"
+    
+    depends_on:
+      - postgres
+    
+    environment:
+      ADMINER_DEFAULT_SERVER: postgres
+      ADMINER_DESIGN: dracula
+
+# =============================================================================
+# Volumes Persistentes
+# =============================================================================
+volumes:
+  postgres_data:
+    name: techsupport_postgres_data
+  redis_data:
+    name: techsupport_redis_data
+  rabbitmq_data:
+    name: techsupport_rabbitmq_data
+
+# =============================================================================
+# Networks (opcional - para isolamento)
+# =============================================================================
+networks:
+  default:
+    name: techsupport_network

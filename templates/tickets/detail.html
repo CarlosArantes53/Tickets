@@ -1,0 +1,192 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ ticket.titulo }} - TechSupport{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'tickets:list' %}">Tickets</a></li>
+                <li class="breadcrumb-item active">{{ ticket.id|truncatechars:12 }}</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Detalhes do Ticket -->
+    <div class="col-md-8">
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="bi bi-ticket-detailed"></i>
+                    {{ ticket.titulo }}
+                </h5>
+                <span class="badge badge-status-{{ ticket.status|lower|slugify }}">
+                    {{ ticket.status }}
+                </span>
+            </div>
+            <div class="card-body">
+                <div class="mb-4">
+                    <h6 class="text-muted">Descrição</h6>
+                    <p class="mb-0">{{ ticket.descricao|linebreaks }}</p>
+                </div>
+                
+                {% if ticket.tags %}
+                <div class="mb-3">
+                    <h6 class="text-muted">Tags</h6>
+                    {% for tag in ticket.tags %}
+                    <span class="badge bg-secondary me-1">{{ tag }}</span>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Ações -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-gear"></i> Ações</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <!-- Atribuir -->
+                    {% if ticket.status != 'Fechado' %}
+                    <div class="col-md-6 mb-3">
+                        <h6>Atribuir a Técnico</h6>
+                        <form method="post" action="{% url 'tickets:atribuir' pk=ticket.id %}" class="d-flex">
+                            {% csrf_token %}
+                            <input type="text" name="tecnico_id" class="form-control me-2" placeholder="ID do técnico" required>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-person-plus"></i>
+                            </button>
+                        </form>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Fechar/Reabrir -->
+                    <div class="col-md-6 mb-3">
+                        {% if ticket.status == 'Fechado' %}
+                        <h6>Reabrir Ticket</h6>
+                        <form method="post" action="{% url 'tickets:reabrir' pk=ticket.id %}">
+                            {% csrf_token %}
+                            <input type="text" name="motivo" class="form-control mb-2" placeholder="Motivo (opcional)">
+                            <button type="submit" class="btn btn-warning">
+                                <i class="bi bi-arrow-counterclockwise"></i> Reabrir
+                            </button>
+                        </form>
+                        {% elif ticket.atribuido_a_id %}
+                        <h6>Fechar Ticket</h6>
+                        <form method="post" action="{% url 'tickets:fechar' pk=ticket.id %}">
+                            {% csrf_token %}
+                            <input type="text" name="resolucao" class="form-control mb-2" placeholder="Resolução (opcional)">
+                            <button type="submit" class="btn btn-success">
+                                <i class="bi bi-check-circle"></i> Fechar
+                            </button>
+                        </form>
+                        {% else %}
+                        <h6>Fechar Ticket</h6>
+                        <p class="text-muted small">
+                            <i class="bi bi-info-circle"></i>
+                            Atribua o ticket antes de fechá-lo.
+                        </p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Sidebar -->
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-info-circle"></i> Informações</h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-sm table-borderless mb-0">
+                    <tr>
+                        <th class="text-muted">ID</th>
+                        <td><code>{{ ticket.id }}</code></td>
+                    </tr>
+                    <tr>
+                        <th class="text-muted">Status</th>
+                        <td>
+                            <span class="badge badge-status-{{ ticket.status|lower|slugify }}">
+                                {{ ticket.status }}
+                            </span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th class="text-muted">Prioridade</th>
+                        <td>
+                            <span class="badge badge-prioridade-{{ ticket.prioridade|lower }}">
+                                {{ ticket.prioridade }}
+                            </span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th class="text-muted">Categoria</th>
+                        <td>{{ ticket.categoria }}</td>
+                    </tr>
+                    <tr>
+                        <th class="text-muted">Criador</th>
+                        <td><code>{{ ticket.criador_id }}</code></td>
+                    </tr>
+                    <tr>
+                        <th class="text-muted">Atribuído a</th>
+                        <td>
+                            {% if ticket.atribuido_a_id %}
+                            <code>{{ ticket.atribuido_a_id }}</code>
+                            {% else %}
+                            <span class="text-muted">Não atribuído</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <th class="text-muted">Criado em</th>
+                        <td>{{ ticket.criado_em|date:"d/m/Y H:i" }}</td>
+                    </tr>
+                    <tr>
+                        <th class="text-muted">Atualizado em</th>
+                        <td>{{ ticket.atualizado_em|date:"d/m/Y H:i" }}</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+        
+        <!-- SLA -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-clock"></i> SLA</h5>
+            </div>
+            <div class="card-body">
+                {% if ticket.sla_prazo %}
+                <p class="mb-2">
+                    <strong>Prazo:</strong> {{ ticket.sla_prazo|date:"d/m/Y H:i" }}
+                </p>
+                {% if ticket.esta_atrasado %}
+                <div class="alert alert-danger mb-0">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    <strong>Atrasado!</strong>
+                </div>
+                {% elif ticket.status == 'Fechado' %}
+                <div class="alert alert-success mb-0">
+                    <i class="bi bi-check-circle"></i>
+                    Ticket fechado
+                </div>
+                {% else %}
+                <div class="alert alert-info mb-0">
+                    <i class="bi bi-clock-history"></i>
+                    Dentro do prazo
+                </div>
+                {% endif %}
+                {% else %}
+                <p class="text-muted mb-0">SLA não definido</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
